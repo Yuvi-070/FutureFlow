@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Trading Strategies</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/ionicons@5.2.3/dist/ionicons/ionicons.esm.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bullish: #00e676;
+            --bearish: #ff5252;
+            --neutral: #536dfe;
+            --bg: #0a0f24;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .hero-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gradient-text {
+            background: linear-gradient(45deg, #00e676, #536dfe, #ff5252);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            animation: gradientShift 8s infinite;
+        }
+
+        .expiry-badge {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            margin: 1rem 0;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2.5rem;
+            position: relative;
+        }
+
+        .strategy-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transform: translateY(0);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .strategy-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, rgba(255,255,255,0.2), transparent 30%);
+            animation: rotate 4s linear infinite;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(10, 15, 36, 0.8);
+            padding: 1.5rem;
+            border-radius: 15px;
+        }
+
+        .strategy-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .strategy-icon {
+            font-size: 1.8rem;
+        }
+
+        .chart-container {
+            height: 200px;
+            margin: 1.5rem 0;
+            position: relative;
+        }
+
+        .strategy-list {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .strategy-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .strategy-item:hover {
+            background: rgba(255,255,255,0.06);
+            transform: translateX(10px);
+        }
+
+        .strategy-item ion-icon {
+            font-size: 1.2rem;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .gradient-text {
+                font-size: 2.5rem;
+            }
+            
+            .container {
+                padding: 0 1.5rem;
+            }
+            
+            .strategy-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero-header">
+            <h1 class="gradient-text">Trading Strategies Matrix</h1>
+            
+        </div>
+
+        <div class="strategy-grid">
+            <!-- Bullish Strategies -->
+            <div class="strategy-card">
+                <div class="card-content">
+                    <div class="strategy-title">
+                        <ion-icon name="trending-up" class="strategy-icon" style="color: var(--bullish);"></ion-icon>
+                        <h2>Bullish Strategies</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="bullishChart"></canvas>
+                    </div>
+                    <ul class="strategy-list">
+                        <li class="strategy-item">
+                            <a href="tradeview.html" style="text-decoration: none; color: inherit; display: block;">
+                                <ion-icon name="arrow-forward-circle" style="color: var(--bullish);"></ion-icon>
+                                Buy Call
+                            </a>
+                        </li>
+                        <li class="strategy-item">
+                            <a href="tradeview.html" style="text-decoration: none; color: inherit; display: block;">
+                                <ion-icon name="arrow-forward-circle" style="color: var(--bullish);"></ion-icon>
+                                Bull Call Spread
+                            </a>
+                        </li>
+                        <li class="strategy-item">
+                            <a href="tradeview.html" style="text-decoration: none; color: inherit; display: block;">
+                                <ion-icon name="arrow-forward-circle" style="color: var(--bullish);"></ion-icon>
+                                Bull Put Spread
+                            </a>
+                        </li>
+                        <li class="strategy-item">
+                            <a href="tradeview.html" style="text-decoration: none; color: inherit; display: block;">
+                                <ion-icon name="arrow-forward-circle" style="color: var(--bullish);"></ion-icon>
+                                long Synthetic 
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Bearish Strategies -->
+            <div class="strategy-card">
+                <div class="card-content">
+                    <div class="strategy-title">
+                        <ion-icon name="trending-down" class="strategy-icon" style="color: var(--bearish);"></ion-icon>
+                        <h2>Bearish Strategies</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="bearishChart"></canvas>
+                    </div>
+                    <ul class="strategy-list">
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--bearish);"></ion-icon>
+                            Buy Put
+                        </li>
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--bearish);"></ion-icon>
+                            Bear Call Spread
+                        </li>
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--bearish);"></ion-icon>
+                            Risk Reversal
+                        </li>
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--bearish);"></ion-icon>
+                            Short Synthetic Future
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Neutral Strategies -->
+            <div class="strategy-card">
+                <div class="card-content">
+                    <div class="strategy-title">
+                        <ion-icon name="swap-horizontal" class="strategy-icon" style="color: var(--neutral);"></ion-icon>
+                        <h2>Neutral Strategies</h2>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="neutralChart"></canvas>
+                    </div>
+                    <ul class="strategy-list">
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--neutral);"></ion-icon>
+                            Iron Butterfly
+                        </li>
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--neutral);"></ion-icon>
+                            Short Strangle
+                        </li>
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--neutral);"></ion-icon>
+                            Jade Lizard
+                        </li>
+                        <li class="strategy-item">
+                            <ion-icon name="arrow-forward-circle" style="color: var(--neutral);"></ion-icon>
+                            Double Plateau
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Animated Chart Config
+        const chartConfig = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { display: false }
+            },
+            elements: {
+                point: { radius: 0 },
+                line: { 
+                    tension: 0.4,
+                    borderWidth: 2
+                }
+            },
+            animation: {
+                duration: 2000,
+                easing: 'easeOutQuart'
+            }
+        };
+
+        // Bullish Chart
+        new Chart(document.getElementById('bullishChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 20}, (_, i) => i + 1),
+                datasets: [{
+                    data: Array.from({length: 20}, () => Math.random() * 40 + 60),
+                    borderColor: '#00e676',
+                    borderWidth: 2
+                }]
+            },
+            options: chartConfig
+        });
+
+        // Bearish Chart
+        new Chart(document.getElementById('bearishChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 20}, (_, i) => i + 1),
+                datasets: [{
+                    data: Array.from({length: 20}, () => Math.random() * 40 + 30),
+                    borderColor: '#ff5252',
+                    borderWidth: 2
+                }]
+            },
+            options: chartConfig
+        });
+
+        // Neutral Chart
+        new Chart(document.getElementById('neutralChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 20}, (_, i) => i + 1),
+                datasets: [{
+                    data: Array.from({length: 20}, () => Math.random() * 10 + 45),
+                    borderColor: '#536dfe',
+                    borderWidth: 2
+                }]
+            },
+            options: chartConfig
+        });
+    </script>
+</body>
+</html>
