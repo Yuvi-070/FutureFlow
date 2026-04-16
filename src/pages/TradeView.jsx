@@ -53,9 +53,9 @@ export default function TradeView() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#131722] flex flex-col">
+    <div className="h-screen bg-[#131722] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-[#1a1e29] border-b border-white/10 px-6 py-4 flex items-center justify-between">
+      <header className="flex-shrink-0 bg-[#1a1e29] border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-white text-xl font-bold">BTC/USD Live Chart</h1>
           <p className="text-gray-400 text-xs">Powered by TradingView · Binance data</p>
@@ -76,12 +76,11 @@ export default function TradeView() {
         </div>
       </header>
 
-      {/* Chart */}
+      {/* Chart — flex-1 fills all remaining height; TradingView autosize uses this */}
       <div
         id="tv_chart_main"
         ref={containerRef}
-        className="flex-1"
-        style={{ minHeight: 'calc(100vh - 65px)' }}
+        className="flex-1 w-full"
       />
     </div>
   )

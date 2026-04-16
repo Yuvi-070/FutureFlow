@@ -27,10 +27,13 @@ html {
   transform: translateY(0);
 }
 
-/* TradingView iframe fill */
-.tv-chart-container {
-  width: 100%;
-  height: calc(100vh - 64px);
+/* TradingView iframe fill — ensures the widget and its iframe always fill the parent */
+.tv-chart-container,
+.tradingview-widget-container,
+.tradingview-widget-container__widget,
+.tradingview-widget-container iframe {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Scrollbar */
