@@ -6,7 +6,7 @@ import {
 
 const stats = [
   { label: 'Portfolio Value', value: '₹4,82,340', change: '+3.2%', up: true, icon: <FaWallet /> },
-  { label: 'Today\'s Gain', value: '₹15,420', change: '+0.8%', up: true, icon: <FaArrowUp /> },
+  { label: "Today's Gain", value: '₹15,420', change: '+0.8%', up: true, icon: <FaArrowUp /> },
   { label: 'Total Trades', value: '247', change: 'This Month', up: null, icon: <FaHistory /> },
   { label: 'Win Rate', value: '73%', change: 'Last 30 days', up: true, icon: <FaChartLine /> },
 ]
