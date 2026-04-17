@@ -417,7 +417,11 @@ def page_dashboard():
 
 
 def _safe_display_with_gradient(df: pd.DataFrame, subset: str, cmap: str) -> None:
-    """Display a DataFrame with background_gradient, falling back gracefully if matplotlib is absent."""
+    """Display a DataFrame with background_gradient, falling back gracefully if matplotlib is absent.
+
+    Catches ImportError (matplotlib missing) and ValueError/TypeError (unknown cmap or
+    styling issues) which are the expected failure modes of background_gradient.
+    """
     if _MATPLOTLIB_AVAILABLE:
         try:
             st.dataframe(
@@ -426,7 +430,7 @@ def _safe_display_with_gradient(df: pd.DataFrame, subset: str, cmap: str) -> Non
                 hide_index=True,
             )
             return
-        except Exception:  # noqa: BLE001
+        except (ImportError, ValueError, TypeError):
             pass
     st.dataframe(df, use_container_width=True, hide_index=True)
 

@@ -538,13 +538,18 @@ PAGE_LIST = list(PAGE_KEYS.values())
 
 
 def _resolve_default_page() -> str:
-    """Return the default page label based on ?page= query param."""
+    """Return the default page label based on ?page= query param.
+
+    Any exception (e.g. Streamlit version doesn't support query_params, or
+    the param value is not a string) is intentionally swallowed so the app
+    always falls back to the Dashboard rather than raising on startup.
+    """
     try:
         params = st.query_params
         key = params.get("page", "").lower()
         if key in PAGE_KEYS:
             return PAGE_KEYS[key]
-    except Exception:  # noqa: BLE001
+    except Exception:  # noqa: BLE001 — safe: always fall back to default page
         pass
     return "🏠 Dashboard"
 
@@ -676,7 +681,11 @@ def page_dashboard():
 
 
 def _safe_display_with_gradient(df: pd.DataFrame, subset: str, cmap: str) -> None:
-    """Display a DataFrame with background_gradient, falling back gracefully."""
+    """Display a DataFrame with background_gradient, falling back gracefully.
+
+    Catches ImportError (matplotlib missing) and ValueError (unknown cmap) which
+    are the only exceptions background_gradient raises in practice.
+    """
     if _MATPLOTLIB_AVAILABLE:
         try:
             st.dataframe(
@@ -685,7 +694,7 @@ def _safe_display_with_gradient(df: pd.DataFrame, subset: str, cmap: str) -> Non
                 hide_index=True,
             )
             return
-        except Exception:  # noqa: BLE001
+        except (ImportError, ValueError, TypeError):
             pass
     st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -960,22 +969,24 @@ def _check_risk(cost: float, portfolio: dict, cash: float) -> tuple[bool, str]:
     if len(portfolio) >= max_pos:
         return False, f"Max open positions ({max_pos}) reached."
 
-    # Max risk per trade
+    # Max risk per trade (use starting capital as reference for risk %)
     risk_pct = float(st.session_state.get("risk_pct", 2.0))
-    portfolio_value = cash + sum(0 for _ in portfolio)  # simplified; cash only for risk calc
-    max_risk_amount = (STARTING_CAPITAL * risk_pct / 100)
-    if cost > max_risk_amount * 10:  # soft warning: trade size > 10× risk amount
-        pass  # Not blocking — just informational
+    max_risk_amount = STARTING_CAPITAL * risk_pct / 100
+    if cost > max_risk_amount * 10:  # soft informational warning only; not blocking
+        pass
 
-    # Max daily loss
+    # Max daily loss — compare current cash + known avg-price value of holdings vs daily start
+    holdings_book_value = sum(
+        info["qty"] * info["avg_price"] for info in portfolio.values()
+    )
+    current_value = cash + holdings_book_value
     max_daily_loss_pct = float(st.session_state.get("max_daily_loss", 5.0))
     daily_start = float(st.session_state.get("daily_start_value", STARTING_CAPITAL))
-    current_value = cash  # simplified
-    daily_loss = (daily_start - current_value) / daily_start * 100
-    if daily_loss >= max_daily_loss_pct:
+    daily_loss_pct = (daily_start - current_value) / daily_start * 100
+    if daily_loss_pct >= max_daily_loss_pct:
         return False, (
             f"Max daily loss limit ({max_daily_loss_pct:.1f}%) reached. "
-            f"Daily P&L: {-daily_loss:.2f}%"
+            f"Daily P&L: {-daily_loss_pct:.2f}%"
         )
 
     return True, ""
