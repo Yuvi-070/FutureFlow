@@ -16,6 +16,12 @@ import streamlit as st
 import yfinance as yf
 from plotly.subplots import make_subplots
 
+try:
+    import matplotlib  # noqa: F401
+    _MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    _MATPLOTLIB_AVAILABLE = False
+
 warnings.filterwarnings("ignore")
 
 # ─── Page configuration ───────────────────────────────────────────────────────
@@ -404,18 +410,25 @@ def page_dashboard():
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("#### 🟢 Gainers")
-            st.dataframe(
-                gainers.style.background_gradient(subset=["Change %"], cmap="Greens"),
-                use_container_width=True,
-                hide_index=True,
-            )
+            _safe_display_with_gradient(gainers, "Change %", "Greens")
         with col2:
             st.markdown("#### 🔴 Losers")
+            _safe_display_with_gradient(losers, "Change %", "Reds_r")
+
+
+def _safe_display_with_gradient(df: pd.DataFrame, subset: str, cmap: str) -> None:
+    """Display a DataFrame with background_gradient, falling back gracefully if matplotlib is absent."""
+    if _MATPLOTLIB_AVAILABLE:
+        try:
             st.dataframe(
-                losers.style.background_gradient(subset=["Change %"], cmap="Reds_r"),
+                df.style.background_gradient(subset=[subset], cmap=cmap),
                 use_container_width=True,
                 hide_index=True,
             )
+            return
+        except Exception:  # noqa: BLE001
+            pass
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 def page_analysis():

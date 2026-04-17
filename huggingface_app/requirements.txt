@@ -1,0 +1,16 @@
+# ── Core Streamlit stack ─────────────────────────────────────────────────────
+streamlit>=1.35.0
+
+# ── Market data ──────────────────────────────────────────────────────────────
+yfinance>=0.2.40
+
+# ── Charts ───────────────────────────────────────────────────────────────────
+plotly>=5.22.0
+
+# ── Numerics ─────────────────────────────────────────────────────────────────
+pandas>=2.2.0
+numpy>=1.26.0
+
+# ── Colour maps for pandas Styler.background_gradient() ──────────────────────
+# Without matplotlib, background_gradient raises ImportError at runtime.
+matplotlib>=3.8.0
