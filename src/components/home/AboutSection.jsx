@@ -17,10 +17,12 @@ function Stat({ value, label, dark = false }) {
 }
 
 const features = [
-  'Strategy & Consulting',
-  'Business Process',
-  'Marketing Rules',
-  'Partnerships',
+  'Real-Time Technical Analysis',
+  'AI Confluence Scoring',
+  'Paper & Live Trading',
+  'Risk Management Controls',
+  'NSE, BSE, US & Crypto',
+  'F&O Strategy Support',
 ]
 
 export default function AboutSection() {
@@ -36,13 +38,13 @@ export default function AboutSection() {
             <div className="grid grid-rows-2 gap-3">
               <img
                 src="/img/about-3.png"
-                alt="Trading dashboard"
+                alt="FutureFlow trading terminal dashboard"
                 className="w-full rounded-t-2xl bg-white object-contain"
                 style={{ maxHeight: '260px' }}
               />
               <img
                 src="/img/about-2.jpg"
-                alt="Investment growth"
+                alt="Market analysis and investment growth"
                 className="w-full rounded-b-2xl object-cover"
                 style={{ maxHeight: '220px' }}
               />
@@ -51,14 +53,20 @@ export default function AboutSection() {
 
           {/* Content */}
           <div>
-            <span className="text-primary font-semibold text-sm uppercase tracking-wider">About Us</span>
+            <span className="text-primary font-semibold text-sm uppercase tracking-wider">About FutureFlow</span>
             <h2 className="mt-2 text-4xl font-extrabold text-brand-dark leading-tight mb-4">
-              The Most Profitable Investment Company Worldwide
+              Professional-Grade Market Intelligence for Every Trader
             </h2>
             <p className="text-gray-600 mb-6 leading-relaxed border-l-4 border-primary pl-4">
-              Harness AI-powered insights for smarter trading decisions. Stay ahead of the
-              market with real-time predictions and analytics — trusted by hundreds of
-              investors across the globe.
+              FutureFlow is an AI-powered trading terminal designed to give retail traders
+              institutional-grade market intelligence. From candlestick analysis with multi-indicator
+              confluence to real-time AI signals and paper trading — everything you need to trade
+              with confidence is in one place.
+            </p>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              Built for Indian and global markets, FutureFlow covers NSE &amp; BSE equities, US
+              stocks, F&amp;O instruments, and major crypto pairs — giving you a unified view of
+              150+ tradable instruments with actionable insights at a glance.
             </p>
 
             <div className="grid grid-cols-2 gap-3 mb-8">
@@ -71,9 +79,9 @@ export default function AboutSection() {
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <Stat value={900} label="Investors" />
-              <Stat value={7} label="Years Experience" dark />
-              <Stat value={10} label="Team Members" />
+              <Stat value={150} label="Instruments" />
+              <Stat value={6} label="Live Indices" dark />
+              <Stat value={10} label="Indicators" />
             </div>
           </div>
         </div>

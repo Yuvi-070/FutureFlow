@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { FaDonate, FaBars, FaTimes, FaSearch } from 'react-icons/fa'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { FaDonate, FaBars, FaTimes, FaSearch, FaRocket } from 'react-icons/fa'
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -76,12 +76,14 @@ export default function Navbar() {
               >
                 <FaSearch />
               </button>
-              <Link
-                to="/login"
-                className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors shadow"
+              <a
+                href="https://huggingface.co/spaces/yuvraj0705/Future_Flow"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors shadow"
               >
-                Login
-              </Link>
+                <FaRocket className="text-xs" /> Launch Terminal
+              </a>
             </div>
 
             {/* Mobile hamburger */}
@@ -116,13 +118,15 @@ export default function Navbar() {
                   {label}
                 </NavLink>
               ))}
-              <Link
-                to="/login"
+              <a
+                href="https://huggingface.co/spaces/yuvraj0705/Future_Flow"
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setOpen(false)}
                 className="block mt-2 px-4 py-2 rounded-full bg-primary text-white text-center text-sm font-semibold"
               >
-                Login
-              </Link>
+                🚀 Launch Terminal
+              </a>
             </div>
           </div>
         )}

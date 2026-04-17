@@ -14,6 +14,10 @@ Deep-link query-param support:
 """
 
 import datetime
+import hashlib
+import os
+import secrets
+import sqlite3
 import warnings
 
 import numpy as np
@@ -77,6 +81,9 @@ st.markdown(
         font-size: 1.5rem;
         font-weight: 700;
         color: #f1f5f9;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
     }
     .apex-card-delta { font-size: 0.85rem; font-weight: 600; }
     .apex-positive { color: #22c55e; }
@@ -119,8 +126,22 @@ st.markdown(
         border: 1px solid #1e3a5f;
         border-radius: 0.75rem;
         padding: 0.85rem 1rem;
+        overflow: visible !important;
     }
-    [data-testid="stMetricValue"] { color: #f1f5f9 !important; }
+    [data-testid="stMetricValue"] {
+        color: #f1f5f9 !important;
+        font-size: 1.1rem !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #64748b !important;
+        font-size: 0.7rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+    [data-testid="stMetricDelta"] { font-size: 0.8rem !important; }
     /* ── Buttons ── */
     .stButton button {
         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
@@ -173,9 +194,36 @@ st.markdown(
         animation: pulse-green 1.5s ease-in-out infinite;
         display: inline-block;
     }
+    .apex-stale-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #f59e0b;
+        display: inline-block;
+    }
     @keyframes pulse-green {
         0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
         50%       { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+    /* ── Login terminal ── */
+    .login-logo-text {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #dc2626;
+        letter-spacing: 0.05em;
+        text-align: center;
+    }
+    .login-subtitle {
+        color: #64748b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        text-align: center;
+        margin-top: 0.3rem;
+    }
+    .terminal-prompt {
+        color: #22c55e;
+        font-size: 0.85rem;
+        margin: 1rem 0 1.5rem 0;
+        font-family: monospace;
     }
     </style>
     """,
@@ -184,20 +232,212 @@ st.markdown(
 
 # ─── Constants ────────────────────────────────────────────────────────────────
 
-POPULAR_TICKERS = [
+# 150+ curated symbols across NSE, BSE, US, and Crypto
+NSE_TICKERS = [
     "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
     "WIPRO.NS", "BAJFINANCE.NS", "SBIN.NS", "LT.NS", "ADANIENT.NS",
-    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "NFLX",
-    "BTC-USD", "ETH-USD",
+    "AXISBANK.NS", "KOTAKBANK.NS", "BHARTIARTL.NS", "MARUTI.NS", "TITAN.NS",
+    "SUNPHARMA.NS", "HCLTECH.NS", "ASIANPAINT.NS", "ULTRACEMCO.NS", "NESTLEIND.NS",
+    "ITC.NS", "POWERGRID.NS", "NTPC.NS", "ONGC.NS", "COALINDIA.NS",
+    "DIVISLAB.NS", "DRREDDY.NS", "CIPLA.NS", "APOLLOHOSP.NS", "BAJAJFINSV.NS",
+    "TECHM.NS", "GRASIM.NS", "HINDALCO.NS", "TATASTEEL.NS", "JSWSTEEL.NS",
+    "TATAMOTORS.NS", "EICHERMOT.NS", "HEROMOTOCO.NS", "BAJAJ-AUTO.NS", "M&M.NS",
+    "HINDUNILVR.NS", "BRITANNIA.NS", "DABUR.NS", "MARICO.NS", "COLPAL.NS",
+    "PIDILITIND.NS", "BERGEPAINT.NS", "HAVELLS.NS", "VOLTAS.NS", "INDUSINDBK.NS",
 ]
 
-SCREENER_TICKERS = [
-    "RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS",
-    "WIPRO.NS", "BAJFINANCE.NS", "SBIN.NS", "AAPL", "MSFT", "GOOGL",
-    "AMZN", "TSLA", "NVDA",
+BSE_TICKERS = [
+    "IRFC.BO", "IRCTC.BO", "HAL.BO", "BEL.BO", "BHEL.BO",
+    "MUTHOOTFIN.BO", "MANAPPURAM.BO", "CHOLAFIN.BO", "LTIM.BO", "MPHASIS.BO",
 ]
+
+US_TICKERS = [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "NFLX", "ORCL", "AMD",
+    "INTC", "CRM", "ADBE", "PYPL", "UBER", "SHOP", "SQ", "PLTR", "SNOW", "COIN",
+    "JPM", "BAC", "GS", "MS", "WFC", "C", "USB", "TFC", "SCHW", "BRK-B",
+    "JNJ", "PFE", "MRNA", "ABBV", "UNH", "CVS", "LLY", "TMO", "ABT", "DHR",
+    "XOM", "CVX", "COP", "SLB", "HAL", "BKR", "PSX", "VLO", "MPC", "EOG",
+    "WMT", "COST", "TGT", "HD", "LOW", "NKE", "SBUX", "MCD", "CMG", "DPZ",
+]
+
+CRYPTO_TICKERS = [
+    "BTC-USD", "ETH-USD", "BNB-USD", "XRP-USD", "SOL-USD",
+    "ADA-USD", "DOGE-USD", "MATIC-USD", "DOT-USD", "AVAX-USD",
+    "LINK-USD", "UNI-USD", "LTC-USD", "BCH-USD", "ATOM-USD",
+]
+
+POPULAR_TICKERS = NSE_TICKERS + BSE_TICKERS + US_TICKERS + CRYPTO_TICKERS
+
+SCREENER_TICKERS = NSE_TICKERS[:20] + US_TICKERS[:20] + CRYPTO_TICKERS[:5]
+
+EXCHANGE_PRESETS = {
+    "Top NSE (50)": NSE_TICKERS,
+    "Top BSE (10)": BSE_TICKERS,
+    "US Large-Cap (30)": US_TICKERS[:30],
+    "Crypto (15)": CRYPTO_TICKERS,
+}
 
 HF_SPACE_URL = "https://huggingface.co/spaces/yuvraj0705/Future_Flow"
+
+# ─── Auth / SQLite helpers ────────────────────────────────────────────────────
+
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.db")
+
+
+def _get_db() -> sqlite3.Connection:
+    """Return a sqlite3 connection, creating the users table if needed."""
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            email    TEXT UNIQUE NOT NULL,
+            name     TEXT NOT NULL,
+            salt     TEXT NOT NULL,
+            pw_hash  TEXT NOT NULL,
+            created  TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    return conn
+
+
+def _hash_password(password: str, salt: str) -> str:
+    """Return a PBKDF2-HMAC-SHA256 hex digest — suitable for password storage."""
+    return hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode(),
+        salt.encode(),
+        200_000,  # NIST-recommended iteration count
+    ).hex()
+
+
+def _register_user(email: str, name: str, password: str) -> tuple[bool, str]:
+    """Register a new user. Returns (success, message)."""
+    if len(password) < 6:
+        return False, "Password must be at least 6 characters."
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return False, "Please enter a valid email address."
+    salt = secrets.token_hex(16)
+    pw_hash = _hash_password(password, salt)
+    try:
+        conn = _get_db()
+        conn.execute(
+            "INSERT INTO users (email, name, salt, pw_hash, created) VALUES (?, ?, ?, ?, ?)",
+            (email.lower().strip(), name.strip(), salt, pw_hash, str(datetime.date.today())),
+        )
+        conn.commit()
+        conn.close()
+        return True, "Account created successfully!"
+    except sqlite3.IntegrityError:
+        return False, "An account with that email already exists."
+    except Exception as exc:  # noqa: BLE001
+        return False, f"Registration error: {exc}"
+
+
+def _login_user(email: str, password: str) -> tuple[bool, str, str]:
+    """Verify credentials. Returns (success, message, name)."""
+    try:
+        conn = _get_db()
+        row = conn.execute(
+            "SELECT name, salt, pw_hash FROM users WHERE email = ?",
+            (email.lower().strip(),),
+        ).fetchone()
+        conn.close()
+        if row is None:
+            return False, "No account found for that email.", ""
+        name, salt, stored_hash = row
+        if _hash_password(password, salt) == stored_hash:
+            return True, "Login successful!", name
+        return False, "Incorrect password.", ""
+    except Exception as exc:  # noqa: BLE001
+        return False, f"Login error: {exc}", ""
+
+
+# ─── Login / Register UI ──────────────────────────────────────────────────────
+
+
+def render_auth_page() -> bool:
+    """
+    Render the terminal-style login / register screen.
+    Returns True if the user is now authenticated.
+    """
+    st.markdown(
+        """
+        <div style="text-align:center;margin-top:1rem">
+            <div class="login-logo-text">📈 FUTUREFLOW</div>
+            <div class="login-subtitle">APEX Market Intelligence Terminal</div>
+        </div>
+        <div class="terminal-prompt">
+            &gt; Initialising secure session&hellip;
+            <span style="color:#64748b">awaiting credentials</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tab_login, tab_register = st.tabs(["🔐 Login", "📝 Register"])
+
+    with tab_login:
+        with st.form("login_form"):
+            st.markdown(
+                "<div style='color:#64748b;font-size:0.75rem;margin-bottom:0.75rem'>"
+                "Enter your credentials to access the terminal.</div>",
+                unsafe_allow_html=True,
+            )
+            email = st.text_input("Email", placeholder="trader@example.com", key="li_email")
+            password = st.text_input("Password", type="password", placeholder="••••••••", key="li_pass")
+            submitted = st.form_submit_button("⚡ Access Terminal", use_container_width=True)
+
+        if submitted:
+            if not email or not password:
+                st.error("Please enter your email and password.")
+            else:
+                ok, msg, name = _login_user(email, password)
+                if ok:
+                    st.session_state["authenticated"] = True
+                    st.session_state["user_name"] = name
+                    st.session_state["user_email"] = email.lower().strip()
+                    st.rerun()
+                else:
+                    st.error(f"⛔ {msg}")
+
+    with tab_register:
+        with st.form("register_form"):
+            st.markdown(
+                "<div style='color:#64748b;font-size:0.75rem;margin-bottom:0.75rem'>"
+                "Create your FutureFlow account — free forever.</div>",
+                unsafe_allow_html=True,
+            )
+            reg_name = st.text_input("Full Name", placeholder="Your Name", key="reg_name")
+            reg_email = st.text_input("Email", placeholder="trader@example.com", key="reg_email")
+            reg_pass = st.text_input("Password (min 6 chars)", type="password",
+                                     placeholder="••••••••", key="reg_pass")
+            reg_pass2 = st.text_input("Confirm Password", type="password",
+                                      placeholder="••••••••", key="reg_pass2")
+            reg_submitted = st.form_submit_button("🚀 Create Account", use_container_width=True)
+
+        if reg_submitted:
+            if not reg_name or not reg_email or not reg_pass:
+                st.error("Please fill in all fields.")
+            elif reg_pass != reg_pass2:
+                st.error("Passwords do not match.")
+            else:
+                ok, msg = _register_user(reg_email, reg_name, reg_pass)
+                if ok:
+                    st.success(f"✅ {msg} You can now log in.")
+                else:
+                    st.error(f"⛔ {msg}")
+
+    st.markdown(
+        "<div style='text-align:center;margin-top:1.5rem;color:#1e3a5f;font-size:0.7rem'>"
+        "Passwords are hashed with SHA-256 + unique salt. "
+        "Data stored locally in the Hugging Face Space.</div>",
+        unsafe_allow_html=True,
+    )
+    return st.session_state.get("authenticated", False)
+
 
 # ─── Helpers / Indicators ─────────────────────────────────────────────────────
 
@@ -469,33 +709,49 @@ def build_chart(
         fig.update_yaxes(title_text="MACD", row=current_row, col=1,
                          title_font_size=10, tickfont_size=9)
 
-    # ── Layout
+    # ── Layout — improved contrast, legend on top, unified hover
     fig.update_layout(
         paper_bgcolor="#0a0e1a",
-        plot_bgcolor="#0a0e1a",
-        font=dict(color="#e2e8f0", size=12),
+        plot_bgcolor="#0c1220",
+        font=dict(color="#e2e8f0", size=11, family="monospace"),
         xaxis_rangeslider_visible=False,
         legend=dict(
-            bgcolor="rgba(15,22,35,0.9)",
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            bgcolor="rgba(15,22,35,0.85)",
             bordercolor="#1e3a5f",
             borderwidth=1,
-            font_size=11,
+            font=dict(size=11),
         ),
-        margin=dict(l=10, r=10, t=30, b=10),
-        height=520,
+        hovermode="x unified",
+        hoverlabel=dict(
+            bgcolor="#0f1623",
+            bordercolor="#1e3a5f",
+            font=dict(color="#e2e8f0", size=11),
+        ),
+        margin=dict(l=10, r=10, t=50, b=10),
+        height=580,
+        dragmode="zoom",
     )
     fig.update_xaxes(
         gridcolor="#131d2e",
         showgrid=True,
         zeroline=False,
         showspikes=True,
-        spikecolor="#334155",
+        spikecolor="#475569",
         spikethickness=1,
+        spikedash="dot",
+        tickfont=dict(size=10),
     )
     fig.update_yaxes(
         gridcolor="#131d2e",
         showgrid=True,
         zeroline=False,
+        tickfont=dict(size=10),
+        tickformat=",.2f",
     )
 
     return fig
@@ -504,8 +760,15 @@ def build_chart(
 # ─── Metric card helper ───────────────────────────────────────────────────────
 
 
-def apex_metric(title: str, value: str, delta: str = "", delta_positive: bool | None = None) -> str:
-    """Return HTML for an APEX-style metric card."""
+def apex_metric(
+    title: str,
+    value: str,
+    delta: str = "",
+    delta_positive: bool | None = None,
+    live: bool = True,
+    last_updated: str = "",
+) -> str:
+    """Return HTML for an APEX-style metric card with optional live dot."""
     if delta:
         if delta_positive is True:
             delta_cls = "apex-positive"
@@ -516,11 +779,19 @@ def apex_metric(title: str, value: str, delta: str = "", delta_positive: bool | 
         delta_html = f'<div class="apex-card-delta {delta_cls}">{delta}</div>'
     else:
         delta_html = ""
+    dot_cls = "apex-live-dot" if live else "apex-stale-dot"
+    updated_html = (
+        f'<div style="color:#475569;font-size:0.65rem;margin-top:0.3rem">'
+        f'<span class="{dot_cls}"></span>&nbsp;{last_updated}</div>'
+        if last_updated
+        else ""
+    )
     return f"""
     <div class="apex-card">
         <div class="apex-card-title">{title}</div>
         <div class="apex-card-value">{value}</div>
         {delta_html}
+        {updated_html}
     </div>
     """
 
@@ -559,14 +830,18 @@ def render_sidebar() -> str:
     default_idx = PAGE_LIST.index(default_page) if default_page in PAGE_LIST else 0
 
     with st.sidebar:
+        user_name = st.session_state.get("user_name", "Trader")
         st.markdown(
-            """
+            f"""
             <div style="padding:0.5rem 0 0.75rem 0">
                 <div style="color:#dc2626;font-size:1.3rem;font-weight:800;
                             letter-spacing:0.05em">📈 FUTUREFLOW</div>
                 <div style="color:#64748b;font-size:0.7rem;
                             letter-spacing:0.15em;text-transform:uppercase">
                     APEX Terminal
+                </div>
+                <div style="color:#22c55e;font-size:0.72rem;margin-top:0.4rem">
+                    ● {user_name}
                 </div>
             </div>
             """,
@@ -603,6 +878,11 @@ def render_sidebar() -> str:
             )
 
         st.divider()
+        if st.button("🚪 Logout", use_container_width=True):
+            for key in ("authenticated", "user_name", "user_email"):
+                st.session_state.pop(key, None)
+            st.rerun()
+
         st.caption("Data via Yahoo Finance · Prices delayed 15 min")
         st.markdown(
             f"<a href='{HF_SPACE_URL}' target='_blank' "
@@ -617,12 +897,14 @@ def render_sidebar() -> str:
 
 
 def page_dashboard():
+    now_str = datetime.datetime.now().strftime("%H:%M:%S")
     st.markdown(
-        """
+        f"""
         <div class="apex-header">
             <span class="apex-logo">📈 FUTUREFLOW</span>
             <span class="apex-tagline">Market Dashboard</span>
             <span class="apex-live-dot" title="Live"></span>
+            <span style="color:#475569;font-size:0.7rem">Last updated: {now_str}</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -643,6 +925,13 @@ def page_dashboard():
                 col.metric(lbl, f"{latest:,.2f}", f"{pct:+.2f}%")
             else:
                 col.metric(lbl, "N/A", "—")
+
+    # Live fetch status indicator
+    st.markdown(
+        f'<div style="color:#475569;font-size:0.7rem;margin-top:0.25rem">'
+        f'<span class="apex-live-dot"></span>&nbsp;Live fetch · data as of {now_str}</div>',
+        unsafe_allow_html=True,
+    )
 
     st.divider()
     st.subheader("Top Gainers & Losers (Today)")
@@ -710,22 +999,26 @@ def page_analysis():
         unsafe_allow_html=True,
     )
 
-    # ── Controls
-    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    # ── Controls — dropdown + search
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        ticker = st.text_input(
-            "Ticker Symbol",
-            value="RELIANCE.NS",
-            placeholder="e.g. AAPL, RELIANCE.NS, BTC-USD",
+        search_term = st.text_input(
+            "🔍 Search ticker (type to filter 150+ instruments)",
+            value="",
+            placeholder="e.g. RELIANCE, AAPL, BTC",
+            key="analysis_search",
         ).upper().strip()
+        filtered_tickers = [t for t in POPULAR_TICKERS if search_term in t] if search_term else POPULAR_TICKERS
+        ticker = st.selectbox(
+            "Select Instrument",
+            options=filtered_tickers if filtered_tickers else POPULAR_TICKERS,
+            index=0,
+            key="analysis_ticker",
+        )
     with col2:
         period = st.selectbox("Period", ["1mo", "3mo", "6mo", "1y", "2y", "5y"], index=2)
     with col3:
         interval = st.selectbox("Interval", ["1d", "1wk", "1mo", "1h"], index=0)
-    with col4:
-        st.write("")
-        st.write("")
-        fetch_btn = st.button("🔄 Fetch", use_container_width=True)
 
     # ── Indicator toggles
     with st.expander("⚙️ Indicators", expanded=True):
@@ -744,7 +1037,7 @@ def page_analysis():
         ema_windows = st.multiselect("EMA windows", ema_options, default=[21]) if show_ema else []
 
     if not ticker:
-        st.info("Enter a ticker symbol to begin.")
+        st.info("Select a ticker symbol to begin.")
         return
 
     with st.spinner(f"Fetching {ticker}…"):
@@ -801,22 +1094,22 @@ def page_analysis():
 
     with col_conf:
         rsi_pct = int(rsi_val)
-        trend_score = int(min(100, max(0, (latest_price - sma50_val) / sma50_val * 100 + 50)))
+        trend_score = int(min(100, max(0, (latest_price - sma50_val) / (sma50_val + 0.001) * 100 + 50)))
         macd_score = int(min(100, max(0, 50 + macd_diff / (atr_val + 0.001) * 10)))
-        vol_score = 50  # placeholder — could compare against avg vol
+        vol_score = 50  # placeholder
 
+        # Build confluence bars as a single concatenated string to avoid stray tag issues
+        conf_bars_html = (
+            _conf_bar("RSI", rsi_pct)
+            + _conf_bar("Trend", trend_score)
+            + _conf_bar("MACD", macd_score)
+            + _conf_bar("Momentum", vol_score)
+        )
         st.markdown(
-            f"""
-            <div class="apex-card" style="height:100%">
-                <div class="apex-card-title">Confluence Indicators</div>
-                <div style="margin-top:0.6rem">
-                    {_conf_bar("RSI", rsi_pct)}
-                    {_conf_bar("Trend", trend_score)}
-                    {_conf_bar("MACD", macd_score)}
-                    {_conf_bar("Momentum", vol_score)}
-                </div>
-            </div>
-            """,
+            '<div class="apex-card" style="height:100%">'
+            '<div class="apex-card-title">Confluence Indicators</div>'
+            f'<div style="margin-top:0.6rem">{conf_bars_html}</div>'
+            '</div>',
             unsafe_allow_html=True,
         )
 
@@ -843,7 +1136,10 @@ def page_analysis():
 
     with st.expander("🗂️ Recent OHLCV Data"):
         display_df = df.tail(20).copy()
-        display_df.index = display_df.index.strftime("%Y-%m-%d")
+        try:
+            display_df.index = display_df.index.strftime("%Y-%m-%d")
+        except Exception:  # noqa: BLE001
+            pass
         st.dataframe(
             display_df.style.format("{:.2f}", subset=["Open", "High", "Low", "Close"]),
             use_container_width=True,
@@ -851,7 +1147,7 @@ def page_analysis():
 
 
 def _conf_bar(label: str, value: int) -> str:
-    """HTML for a single confluence bar row (0–100)."""
+    """HTML for a single confluence bar row (0-100). Fully self-contained — no stray tags."""
     pct = max(0, min(100, value))
     if pct >= 60:
         color = "#22c55e"
@@ -859,15 +1155,16 @@ def _conf_bar(label: str, value: int) -> str:
         color = "#eab308"
     else:
         color = "#ef4444"
-    return f"""
-    <div class="conf-row">
-        <span class="conf-label">{label}</span>
-        <div class="conf-bar-bg">
-            <div class="conf-bar-fill" style="width:{pct}%;background:{color}"></div>
-        </div>
-        <span class="conf-value">{pct}</span>
-    </div>
-    """
+    # Build as a single concatenated string to avoid any multiline whitespace issues
+    return (
+        '<div class="conf-row">'
+        f'<span class="conf-label">{label}</span>'
+        '<div class="conf-bar-bg">'
+        f'<div class="conf-bar-fill" style="width:{pct}%;background:{color}"></div>'
+        '</div>'
+        f'<span class="conf-value">{pct}</span>'
+        '</div>'
+    )
 
 
 def page_screener():
@@ -875,12 +1172,46 @@ def page_screener():
         """
         <div class="apex-header">
             <span class="apex-logo">🔍 STOCK SCREENER</span>
-            <span class="apex-tagline">Filter by technical criteria</span>
+            <span class="apex-tagline">Filter by technical criteria · 150+ instruments</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    # ── Ticker selection — exchange preset + search + multiselect
+    st.markdown("##### 🎯 Select Instruments to Screen")
+    preset_col, search_col = st.columns([1, 2])
+    with preset_col:
+        preset = st.selectbox(
+            "Exchange Preset",
+            options=list(EXCHANGE_PRESETS.keys()) + ["Custom"],
+            index=0,
+            key="screener_preset",
+        )
+    with search_col:
+        screener_search = st.text_input(
+            "🔍 Search ticker",
+            value="",
+            placeholder="e.g. RELIANCE, TSLA, BTC-USD",
+            key="screener_search",
+        ).upper().strip()
+
+    preset_list = EXCHANGE_PRESETS.get(preset, [])
+    search_filtered = [t for t in POPULAR_TICKERS if screener_search in t] if screener_search else POPULAR_TICKERS
+
+    selected_tickers = st.multiselect(
+        "Selected instruments (add/remove freely)",
+        options=search_filtered if search_filtered else POPULAR_TICKERS,
+        default=[t for t in preset_list if t in (search_filtered if search_filtered else POPULAR_TICKERS)][:30],
+        key="screener_tickers",
+    )
+
+    if not selected_tickers:
+        st.info("Select at least one ticker to screen.")
+        return
+
+    # ── Filters
+    st.markdown("##### ⚙️ Filter Criteria")
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         min_rsi = st.slider("Min RSI", 0, 100, 0)
@@ -891,17 +1222,13 @@ def page_screener():
     with col4:
         max_chg = st.slider("Max Change %", 0.0, 20.0, 5.0, step=0.5)
 
-    tickers_input = st.text_area(
-        "Tickers to screen (comma-separated)",
-        value=", ".join(SCREENER_TICKERS),
-    )
-    tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
+    signal_filter = st.selectbox("Signal Filter", ["All", "BUY", "SELL", "HOLD"], index=0)
 
     if st.button("🔍 Run Screener", use_container_width=True):
         results = []
         progress = st.progress(0, text="Screening…")
-        for i, sym in enumerate(tickers):
-            progress.progress((i + 1) / len(tickers), text=f"Analyzing {sym}…")
+        for i, sym in enumerate(selected_tickers):
+            progress.progress((i + 1) / len(selected_tickers), text=f"Analyzing {sym}…")
             df = fetch_data(sym, "3mo", "1d")
             if df.empty or len(df) < 15:
                 continue
@@ -938,8 +1265,24 @@ def page_screener():
             & (df_res["Change %"] >= min_chg)
             & (df_res["Change %"] <= max_chg)
         ]
+        if signal_filter != "All":
+            filtered = filtered[filtered["Signal"] == signal_filter]
+
         st.success(f"Found **{len(filtered)}** of **{len(df_res)}** stocks matching filters.")
-        st.dataframe(filtered, use_container_width=True, hide_index=True)
+
+        if not filtered.empty:
+            def _style_signal(val: str) -> str:
+                if val == "BUY":
+                    return "color: #22c55e; font-weight: bold"
+                if val == "SELL":
+                    return "color: #ef4444; font-weight: bold"
+                return "color: #eab308; font-weight: bold"
+
+            try:
+                styled = filtered.style.map(_style_signal, subset=["Signal"])
+                st.dataframe(styled, use_container_width=True, hide_index=True)
+            except Exception:  # noqa: BLE001
+                st.dataframe(filtered, use_container_width=True, hide_index=True)
 
 
 # ─── Paper Trading ────────────────────────────────────────────────────────────
@@ -1045,8 +1388,7 @@ def page_paper_trading():
     mc5.metric("Open Positions", str(len(portfolio)))
 
     # ── Risk status bar
-    risk_pct_used = len(portfolio) / max(1, int(st.session_state.get("max_positions", 10))) * 100
-    daily_loss_pct = float(st.session_state.get("max_daily_loss", 5.0))
+    daily_loss_pct_limit = float(st.session_state.get("max_daily_loss", 5.0))
     daily_start = float(st.session_state.get("daily_start_value", STARTING_CAPITAL))
     daily_pnl_pct = (portfolio_value - daily_start) / daily_start * 100
     st.markdown(
@@ -1066,7 +1408,7 @@ def page_paper_trading():
                 </div>
                 <div>
                     <span style="color:#64748b;font-size:0.75rem">Daily Loss Limit</span>
-                    <div style="color:#f1f5f9;font-weight:700">{daily_loss_pct:.1f}%</div>
+                    <div style="color:#f1f5f9;font-weight:700">{daily_loss_pct_limit:.1f}%</div>
                 </div>
                 <div>
                     <span style="color:#64748b;font-size:0.75rem">Max Risk/Trade</span>
@@ -1089,7 +1431,12 @@ def page_paper_trading():
     with tab_trade:
         with st.form("trade_form"):
             col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-            sym = col1.text_input("Symbol", value="RELIANCE.NS").upper().strip()
+            sym = col1.selectbox(
+                "Symbol",
+                options=POPULAR_TICKERS,
+                index=0,
+                key="trade_sym_select",
+            )
             qty = col2.number_input("Quantity", min_value=1, value=10, step=1)
             action = col3.selectbox("Action", ["BUY", "SELL"])
             col4.write("")
@@ -1299,6 +1646,11 @@ def page_about():
 
 
 def main():
+    # ── Auth gate — show login/register until authenticated
+    if not st.session_state.get("authenticated", False):
+        render_auth_page()
+        return
+
     page = render_sidebar()
 
     if page == "🏠 Dashboard":
