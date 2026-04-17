@@ -304,8 +304,13 @@ def _get_db() -> sqlite3.Connection:
 
 
 def _hash_password(password: str, salt: str) -> str:
-    """Return a SHA-256 hex digest of salt + password."""
-    return hashlib.sha256((salt + password).encode()).hexdigest()
+    """Return a PBKDF2-HMAC-SHA256 hex digest — suitable for password storage."""
+    return hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode(),
+        salt.encode(),
+        200_000,  # NIST-recommended iteration count
+    ).hex()
 
 
 def _register_user(email: str, name: str, password: str) -> tuple[bool, str]:
