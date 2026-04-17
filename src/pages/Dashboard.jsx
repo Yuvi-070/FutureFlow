@@ -123,6 +123,18 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-400">TradingView widget</p>
                 </div>
               </Link>
+              <a
+                href="https://huggingface.co/spaces/yuvraj0705/Future_Flow"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 transition-colors group"
+              >
+                <FaChartBar className="text-green-400" />
+                <div>
+                  <p className="text-sm font-semibold">APEX Trading Terminal</p>
+                  <p className="text-xs text-gray-400">Paper trading · AI signals</p>
+                </div>
+              </a>
               <Link
                 to="/strategies"
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group"

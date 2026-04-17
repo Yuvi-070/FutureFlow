@@ -47,12 +47,14 @@ export default function HeroSection() {
             >
               Get Started Free <FaArrowRight />
             </Link>
-            <Link
-              to="/tradeview"
+            <a
+              href="https://huggingface.co/spaces/yuvraj0705/Future_Flow"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full border-2 border-white/60 text-white font-bold text-base hover:bg-white hover:text-brand-dark transition-all"
             >
-              View Live Chart
-            </Link>
+              Launch Trading Terminal
+            </a>
           </div>
 
           {/* Quick stats row */}
