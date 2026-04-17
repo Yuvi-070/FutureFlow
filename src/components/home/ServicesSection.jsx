@@ -1,35 +1,39 @@
 import { Link } from 'react-router-dom'
 import { useScrollReveal } from '../ui/hooks'
-import { FaDonate, FaArrowRight } from 'react-icons/fa'
+import { FaChartBar, FaArrowRight, FaRobot, FaShieldAlt, FaSearch } from 'react-icons/fa'
 
 const services = [
   {
     image: '/img/service-1.jpg',
-    title: 'Trading Strategy Investment',
+    icon: <FaChartBar className="text-primary text-2xl" />,
+    title: 'Technical Analysis Terminal',
     description:
-      'Precision-driven trading strategies for consistent and profitable investments powered by advanced market analysis.',
+      'Professional candlestick charts with SMA, EMA, Bollinger Bands, RSI, and MACD. Analyse 150+ instruments across NSE, BSE, US, and crypto markets with a single click.',
   },
   {
     image: '/img/service-4.jpg',
-    title: 'Stock Investment Planning',
+    icon: <FaRobot className="text-primary text-2xl" />,
+    title: 'AI Signal Engine',
     description:
-      'Plan today, prosper tomorrow – smart investment strategies for a secure financial future tailored to your goals.',
+      'Rule-based AI signals (BUY / SELL / HOLD) with multi-factor confluence scoring. Understand the "why" behind every signal with transparent indicator breakdown.',
   },
   {
     image: '/img/service-3.jpg',
-    title: 'Private Client Investment',
+    icon: <FaShieldAlt className="text-primary text-2xl" />,
+    title: 'Paper & Live Trading',
     description:
-      'Exclusive investment solutions tailored for elite investors seeking personalised wealth management.',
+      'Practice with virtual ₹1,00,000 in paper trading mode with real market prices. Graduate to live execution when ready — full F&O and equity support included.',
   },
   {
     image: '/img/service-2.jpg',
-    title: 'AI Market Analytics',
+    icon: <FaSearch className="text-primary text-2xl" />,
+    title: 'Smart Stock Screener',
     description:
-      'Real-time AI-powered market insights and predictive analytics to help you stay one step ahead of the market.',
+      'Screen 150+ stocks simultaneously by RSI range, price change %, trend direction, and AI signal. Find your next trade opportunity in seconds — not hours.',
   },
 ]
 
-function ServiceCard({ image, title, description, delay = 0 }) {
+function ServiceCard({ image, icon, title, description, delay = 0 }) {
   const [ref, visible] = useScrollReveal()
   return (
     <div
@@ -47,7 +51,7 @@ function ServiceCard({ image, title, description, delay = 0 }) {
       </div>
       <div className="p-6 group-hover:bg-brand-dark transition-colors duration-500">
         <div className="flex items-center gap-3 mb-3">
-          <FaDonate className="text-primary text-2xl" />
+          {icon}
           <h3 className="font-bold text-brand-dark group-hover:text-white transition-colors text-base">
             {title}
           </h3>
@@ -73,8 +77,12 @@ export default function ServicesSection() {
         <div className="text-center mb-12">
           <span className="text-primary font-semibold text-sm uppercase tracking-wider">Our Services</span>
           <h2 className="mt-2 text-4xl font-extrabold text-brand-dark">
-            Offering the Best Consulting &amp; Investment Services
+            Everything You Need to Trade with Confidence
           </h2>
+          <p className="mt-3 text-gray-500 max-w-2xl mx-auto">
+            FutureFlow bundles professional-grade analysis, AI signals, paper trading, and screening
+            into one powerful terminal — accessible from anywhere, no installation required.
+          </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((s, i) => (

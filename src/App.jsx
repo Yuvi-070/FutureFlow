@@ -6,10 +6,6 @@ import About from './pages/About'
 import Services from './pages/Services'
 import Projects from './pages/Projects'
 import Contact from './pages/Contact'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import Dashboard from './pages/Dashboard'
-import TradeView from './pages/TradeView'
 import Strategies from './pages/Strategies'
 
 function MainLayout() {
@@ -37,11 +33,6 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/strategies" element={<Strategies />} />
         </Route>
-        {/* Standalone pages */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/tradeview" element={<TradeView />} />
       </Routes>
     </BrowserRouter>
   )
