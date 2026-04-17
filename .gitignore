@@ -7,6 +7,13 @@ dist/
 # Vite cache
 .vite/
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+
 # Environment variables
 .env
 .env.local
