@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Scope Tailwind scanning to frontend files only (improves build performance) */
+@source "../index.html";
+@source "./**/*.{js,jsx,ts,tsx}";
+
 @theme {
   --color-primary: #dc3545;
   --color-primary-dark: #b91c2a;

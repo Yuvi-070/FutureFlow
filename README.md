@@ -106,3 +106,25 @@ Change `--color-primary` to instantly retheme all buttons, links, and accents.
 | @tailwindcss/vite | 4.x | Tailwind Vite plugin |
 | vite | 8.x | Build tool |
 | @vitejs/plugin-react | 6.x | React Fast Refresh |
+
+## 🚢 Deploying to Vercel
+
+### Recommended Vercel project settings
+
+| Setting | Value |
+|---|---|
+| Framework Preset | **Vite** |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+### Required environment variable
+
+Set the following in your Vercel project → **Settings → Environment Variables**:
+
+| Variable | Value | Why |
+|---|---|---|
+| `UV_LINK_MODE` | `copy` | Suppresses the `Failed to hardlink files` build warning that appears when Vercel's cache and build filesystems are on separate mounts |
+
+### SPA routing
+
+`vercel.json` (already in the repo) rewrites all paths to `/index.html` so that React Router links like `/services` or `/dashboard` work correctly on hard refresh — without it Vercel returns a 404 for any route other than `/`.
