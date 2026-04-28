@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { FaDonate, FaBars, FaTimes, FaSearch, FaRocket } from 'react-icons/fa'
 
 const navLinks = [
